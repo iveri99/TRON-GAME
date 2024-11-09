@@ -103,5 +103,3 @@ player_2 = {
     'direction': 'LEFT',
     'speed': 5
 }
-
-#testing to see if file updates on github
