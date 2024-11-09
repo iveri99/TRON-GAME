@@ -51,14 +51,34 @@ while running:
     elif keys[pygame.K_DOWN] and player_1['direction'] == 'DOWN':
         player_1['position'][1] += player_1['speed']
     
-    #Move player 2
-    if keys[pygame.K_LEFT] and player_2['direction'] == 'RIGHT':
+    #Handling player 2 movement (wasd keys)
+    if keys[pygame.K_a] and player_2['direction'] == 'RIGHT':
         player_2['position'][0] += player_2['speed']
-    elif keys[pygame.K_RIGHT] and player_2['direction'] == 'RIGHT':
+    elif keys[pygame.K_d] and player_2['direction'] == 'RIGHT':
         player_2['position'][0] -= player_2['speed']
-    elif keys[pygame.K_UP] and player_2['direction'] == 'UP':
+    elif keys[pygame.K_w] and player_2['direction'] == 'UP':
         player_2['position'][1] -= player_2['speed']
-    elif keys[pygame.K_DOWN] and player_2['direction'] == 'DOWN':
+    elif keys[pygame.K_s] and player_2['direction'] == 'DOWN':
+        player_2['position'][1] += player_2['speed']
+
+    # Move Player 1
+    if player_1['direction'] == 'RIGHT':
+        player_1['position'][0] += player_1['speed']
+    elif player_1['direction'] == 'LEFT':
+        player_1['position'][0] -= player_1['speed']
+    elif player_1['direction'] == 'UP':
+        player_1['position'][1] -= player_1['speed']
+    elif player_1['direction'] == 'DOWN':
+        player_1['position'][1] += player_1['speed']
+
+    # Move Player 2
+    if player_2['direction'] == 'RIGHT':
+        player_2['position'][0] += player_2['speed']
+    elif player_2['direction'] == 'LEFT':
+        player_2['position'][0] -= player_2['speed']
+    elif player_2['direction'] == 'UP':
+        player_2['position'][1] -= player_2['speed']
+    elif player_2['direction'] == 'DOWN':
         player_2['position'][1] += player_2['speed']
 
 
