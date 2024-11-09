@@ -1,24 +1,29 @@
 import pygame
 
-#initialise PyGame
+# initialise PyGame
 pygame.init()
 
-#Setting up display
+# Setting up display
 WIDTH = 800
 HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("TRON GAME")
 
-#Define colours
+# Define colours
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 
-#Variable created to identify that game is running
+# Variable created to identify that game is running
 running = True
 clock = pygame.time.Clock() #used later for screen refresh rate
 
-#Dictionary for player 1 with position, colour, direction and speed keys
+PLAYER_SIZE = 10
+player_1_trail = []
+player_2_trail = []
+MAX_TRAIL_LENGTH = 50
+
+# Dictionary for player 1 with position, colour, direction and speed keys
 player_1 = {
     'position': [100, HEIGHT // 2],
     'colour': BLUE,
@@ -26,7 +31,7 @@ player_1 = {
     'speed': 5
 }
 
-#Same done for player 2
+# Same done for player 2
 player_2 = {
     'position': [WIDTH - 100, HEIGHT // 2],
     'colour': RED,
@@ -34,32 +39,32 @@ player_2 = {
     'speed': 5
 }
 
-#Loop to keep game running until event quit from pygame
+# Main code loop
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
     
-    #Handling player 1 movement (arrow keys)
+    # Handling player 1 movement (arrow keys)
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_1['direction'] == 'RIGHT':
-        player_1['position'][0] += player_1['speed']
-    elif keys[pygame.K_RIGHT] and player_1['direction'] == 'RIGHT':
-        player_1['position'][0] -= player_1['speed']
-    elif keys[pygame.K_UP] and player_1['direction'] == 'UP':
-        player_1['position'][1] -= player_1['speed']
-    elif keys[pygame.K_DOWN] and player_1['direction'] == 'DOWN':
-        player_1['position'][1] += player_1['speed']
+    if keys[pygame.K_LEFT] and player_1['direction'] != 'RIGHT': # prevents reversing
+        player_1['direction'] = 'LEFT'
+    elif keys[pygame.K_RIGHT] and player_1['direction'] != 'LEFT':
+        player_1['direction'] = 'RIGHT'
+    elif keys[pygame.K_UP] and player_1['direction'] != 'DOWN':
+        player_1['direction'] = 'UP'
+    elif keys[pygame.K_DOWN] and player_1['direction'] != 'UP':
+        player_1['direction'] = 'DOWN'
     
-    #Handling player 2 movement (wasd keys)
-    if keys[pygame.K_a] and player_2['direction'] == 'RIGHT':
-        player_2['position'][0] += player_2['speed']
-    elif keys[pygame.K_d] and player_2['direction'] == 'RIGHT':
-        player_2['position'][0] -= player_2['speed']
-    elif keys[pygame.K_w] and player_2['direction'] == 'UP':
-        player_2['position'][1] -= player_2['speed']
-    elif keys[pygame.K_s] and player_2['direction'] == 'DOWN':
-        player_2['position'][1] += player_2['speed']
+    # Handling player 2 movement (wasd keys)
+    if keys[pygame.K_a] and player_2['direction'] != 'RIGHT':
+        player_2['direction'] = 'LEFT'
+    elif keys[pygame.K_d] and player_2['direction'] != 'LEFT':
+        player_2['direction'] = 'RIGHT'
+    elif keys[pygame.K_w] and player_2['direction'] != 'DOWN':
+        player_2['direction'] = 'UP'
+    elif keys[pygame.K_s] and player_2['direction'] != 'UP':
+        player_2['direction'] = 'DOWN'
 
     # Move Player 1
     if player_1['direction'] == 'RIGHT':
@@ -81,25 +86,34 @@ while running:
     elif player_2['direction'] == 'DOWN':
         player_2['position'][1] += player_2['speed']
 
+    # Add current position to trail
+    player_1_trail.append(player_1['position'][:])
+    player_2_trail.append(player_2['position'][:])
 
-screen.fill(BLACK)
+    if len(player_1_trail) > MAX_TRAIL_LENGTH:
+        player_1_trail.pop(0) # Remove the oldest position
+    
+    if len(player_2_trail) > MAX_TRAIL_LENGTH:
+        player_2_trail.pop(0) # Remove the oldest position
 
-pygame.display.flip()
+    screen.fill(BLACK)
 
-clock.tick(60)
+    # Draw player 1 trail
+    for pos in player_1_trail:
+        pygame.draw.rect(screen, player_1['colour'], (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
+    
+    # Draw player 2 trail
+    for pos in player_2_trail:
+        pygame.draw.rect(screen, player_2['colour'], (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
 
-#Dictionary for player 1 with position, colour, direction and speed keys
-player_1 = {
-    'position': [100, HEIGHT // 2],
-    'colour': BLUE,
-    'direction': 'RIGHT',
-    'speed': 5
-}
+    # Drawing sprites for players, player 1 as blue square, player 2 as red square
+    pygame.draw.rect(screen, player_1['colour'],
+                (player_1['position'][0], player_1['position'][1], PLAYER_SIZE, PLAYER_SIZE))  
+    pygame.draw.rect(screen, player_2['colour'], 
+                 (player_2['position'][0], player_2['position'][1], PLAYER_SIZE, PLAYER_SIZE))
+    
+    pygame.display.flip() # Update display
 
-#Same done for player 2
-player_2 = {
-    'position': [WIDTH - 100, HEIGHT // 2],
-    'colour': RED,
-    'direction': 'LEFT',
-    'speed': 5
-}
+    clock.tick(60) # Limit to 60 FPS
+
+
