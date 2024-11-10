@@ -11,6 +11,8 @@ trail_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # Transparent s
 trail_alpha = 50
 pygame.display.set_caption("TRON GAME")
 
+game_over = False # 'Game over check' variable created with boolean value - originally falsy
+
 # Define colours
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
@@ -47,6 +49,17 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     
+    # If game over, show message and skip movement/logic
+    if game_over:
+        screen.fill(BLACK)
+        font = pygame.font.Font(None, 74)
+        text = font.render("GAME OVER", True, (255, 255, 255))
+        
+        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        screen.blit(text, text_rect)
+        pygame.display.flip()
+        continue  # Skip the rest of the loop if game over
+
     # Handling player 1 movement (arrow keys)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] and player_1['direction'] != 'RIGHT': # prevents reversing
@@ -128,6 +141,15 @@ while running:
         trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
         trail_rect.fill(trail_color)
         screen.blit(trail_rect, pos)
+
+    if (player_1['position'][0] < 0 or 
+        player_1['position'][0] >= WIDTH or
+        player_1['position'][1] < 0 or 
+        player_1['position'][1] >= HEIGHT):
+        print("Player 1 hit the wall!")
+        game_over = True
+
+
 
     screen.blit(trail_surface, (0, 0)) # Blit trail surface onto main screen
 
