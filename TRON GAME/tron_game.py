@@ -7,6 +7,8 @@ pygame.init()
 WIDTH = 800
 HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+trail_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # Transparent surface created for trail
+trail_alpha = 50
 pygame.display.set_caption("TRON GAME")
 
 # Define colours
@@ -97,14 +99,37 @@ while running:
         player_2_trail.pop(0) # Remove the oldest position
 
     screen.fill(BLACK)
+    trail_surface.fill((0, 0, 0, 0))
 
-    # Draw player 1 trail
-    for pos in player_1_trail:
-        pygame.draw.rect(screen, player_1['colour'], (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
+    player_1_trail_colour = (*player_1['colour'], trail_alpha)
+    player_2_trail_colour = (*player_2['colour'], trail_alpha)
+
+    # # Draw player 1 trail
+    # for pos in player_1_trail:
+    #     pygame.draw.rect(screen, player_1_trail_colour, (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
     
-    # Draw player 2 trail
-    for pos in player_2_trail:
-        pygame.draw.rect(screen, player_2['colour'], (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
+    # # Draw player 2 trail
+    # for pos in player_2_trail:
+    #     pygame.draw.rect(screen, player_2_trail_colour, (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
+
+    # Draw Player 1 trail with fading effect
+    for i, pos in enumerate(player_1_trail):
+        # Calculate alpha based on position in the trail list (older segments are more transparent)
+        alpha = int(255 * (i / MAX_TRAIL_LENGTH))  # Older positions will have lower alpha
+        trail_color = (*player_1['colour'], alpha)
+        trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
+        trail_rect.fill(trail_color)
+        screen.blit(trail_rect, pos)
+    
+    # Draw Player 2 trail with fading effect
+    for i, pos in enumerate(player_2_trail):
+        alpha = int(255 * (i / MAX_TRAIL_LENGTH))
+        trail_color = (*player_2['colour'], alpha)
+        trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
+        trail_rect.fill(trail_color)
+        screen.blit(trail_rect, pos)
+
+    screen.blit(trail_surface, (0, 0)) # Blit trail surface onto main screen
 
     # Drawing sprites for players, player 1 as blue square, player 2 as red square
     pygame.draw.rect(screen, player_1['colour'],
@@ -116,4 +141,4 @@ while running:
 
     clock.tick(60) # Limit to 60 FPS
 
-
+    
