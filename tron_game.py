@@ -3,9 +3,16 @@ import pygame
 # initialise PyGame
 pygame.init()
 
-# Setting up display
+# CONSTANTS
 WIDTH = 800
 HEIGHT = 600
+CELL_SIZE = 20
+BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+USER_INITAL_DIRECTION = "LEFT"
+PROGRAM_INITIAL_DIRECTION = "RIGHT"
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 trail_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # Transparent surface created for trail
 trail_alpha = 50
@@ -13,19 +20,77 @@ pygame.display.set_caption("TRON GAME")
 
 game_over = False # 'Game over check' variable created with boolean value - originally falsy
 
-# Define colours
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
+
 
 # Variable created to identify that game is running
 running = True
-clock = pygame.time.Clock() #used later for screen refresh rate
-
+clock = pygame.time.Clock() # Used later for screen refresh rate
 PLAYER_SIZE = 10
 player_1_trail = []
 player_2_trail = []
 MAX_TRAIL_LENGTH = 50
+
+
+class Move:
+    def __init__(self, x, y, speed=5):
+        # Initialise Move class
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.direction = None
+        self.previous_positions = []
+
+    def update_position(self):
+        # Checking if self.direction has been given a value
+        if self.direction is None:
+            raise ValueError("Direction must be set before calling move.")
+        
+        # Save current position to trail
+        self.previous_positions.append((self.x, self.y))
+
+        # Update position based on direction
+        if self.direction == "UP":
+            self.y -= self.speed
+        elif self.direction == "DOWN":
+            self.y += self.speed
+        elif self.direction == "LEFT":
+            self.x -= self.speed
+        elif self.direction == "RIGHT":
+            self.x += self.speed
+
+    def change_direction(self, new_direction):
+        # Prevent 180 degree turns
+        opposite_directions = {
+            "UP": "DOWN",
+            "DOWN": "UP",
+            "LEFT": "RIGHT",
+            "RIGHT": "LEFT"
+        }
+
+        if new_direction != opposite_directions[self.direction]:
+            self.direction = new_direction
+
+    def check_collision(self):
+        # Check if out of bounds
+        if self.x < 0 or self.x >= WIDTH or self.y < 0 or self.y >= HEIGHT:
+            return True
+        elif (self.x, self.y) in self.previous_positions:
+            return True
+        return False
+    
+    def get_position(self):
+        # Return current position
+        return [self.x, self.y]
+            
+class Player(Move):
+    def __init__(self):
+        self.speed = CELL_SIZE // 5
+        self.target_position = None
+
+    def move(self):
+        self.update_position()
+
+    
 
 # Dictionary for player 1 with position, colour, direction and speed keys
 player_1 = {
