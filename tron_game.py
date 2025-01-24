@@ -10,8 +10,9 @@ CELL_SIZE = 20
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
-USER_INITAL_DIRECTION = "LEFT"
-PROGRAM_INITIAL_DIRECTION = "RIGHT"
+PLAYER_SIZE = 10
+MAX_TRAIL_LENGTH = 50
+FPS = 60
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 trail_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # Transparent surface created for trail
@@ -40,6 +41,10 @@ class Move:
         self.direction = None
         self.previous_positions = []
 
+        self.trail = [] # Keep track of position - prevent self collision
+        self.max_trail_length = MAX_TRAIL_LENGTH # Limit length of trail
+
+
     def update_position(self):
         # Checking if self.direction has been given a value
         if self.direction is None:
@@ -58,6 +63,10 @@ class Move:
         elif self.direction == "RIGHT":
             self.x += self.speed
 
+        self.trail.append((self.x, self.y))
+        if len(self.trail) > self.max_trail_length:
+            self.trail.pop(0)    
+
     def change_direction(self, new_direction):
         # Prevent 180 degree turns
         opposite_directions = {
@@ -75,6 +84,12 @@ class Move:
         if self.x < 0 or self.x >= WIDTH or self.y < 0 or self.y >= HEIGHT:
             return True
         elif (self.x, self.y) in self.previous_positions:
+            return True
+        return False
+    
+    def check_self_collision(self):
+        # Check for self collision
+        if len(self.trail) > 2 and (self.x, self.y) in self.trail[:-1]:
             return True
         return False
     
