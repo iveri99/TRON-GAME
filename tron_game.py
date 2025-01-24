@@ -33,12 +33,12 @@ MAX_TRAIL_LENGTH = 50
 
 
 class Move:
-    def __init__(self, x, y, speed=5):
+    def __init__(self, x, y, speed=5, direction = None):
         # Initialise Move class
         self.x = x
         self.y = y
         self.speed = speed
-        self.direction = None
+        self.direction = direction
         self.previous_positions = []
 
         self.trail = [] # Keep track of position - prevent self collision
@@ -98,6 +98,7 @@ class Move:
         return [self.x, self.y]
             
 class Player(Move):
+    # Initialise Player class
     def __init__(self):
         self.speed = CELL_SIZE // 5
         self.target_position = None
@@ -105,81 +106,75 @@ class Player(Move):
     def move(self):
         self.update_position()
 
-    
+    def draw(self, surface):
+        pass
 
-# Dictionary for player 1 with position, colour, direction and speed keys
-player_1 = {
-    'position': [100, HEIGHT // 2],
-    'colour': BLUE,
-    'direction': 'RIGHT',
-    'speed': 5
-}
+class UserPlayer(Player):
+    def __init__(self, x, y, colour = BLUE, speed=5, direction="LEFT"):
+        super().__init__(x, y, colour, speed, direction)
 
-# Same done for player 2
-player_2 = {
-    'position': [WIDTH - 100, HEIGHT // 2],
-    'colour': RED,
-    'direction': 'LEFT',
-    'speed': 5
-}
+    def handle_input(self, keys):
+        # Example of using arrow keys
+        if keys[pygame.K_LEFT]:
+            self.change_direction("LEFT")
+        elif keys[pygame.K_RIGHT]:
+            self.change_direction("RIGHT")
+        elif keys[pygame.K_UP]:
+            self.change_direction("UP")
+        elif keys[pygame.K_DOWN]:
+            self.change_direction("DOWN")
 
-# Main code loop
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    
-    # If game over, show message and skip movement/logic
-    if game_over:
-        screen.fill(BLACK)
-        font = pygame.font.Font(None, 74)
-        text = font.render("GAME OVER", True, (255, 255, 255))
+    def draw(self, surface):
+        # Draw trail with fading + player's square
+        for i, pos in enumerate(self.trail):
+            alpha = int(255 * (i / self.max_trail_length))
+            trail_color = (self.colour, alpha)  # RGBA
+            trail_rect = pygame.Surface((10, 10), pygame.SRCALPHA)
+            trail_rect.fill(trail_color)
+            surface.blit(trail_rect, pos)
+
+class ProgramPlayer(Player):
+    def __init__(self, x, y, colour = RED, speed=5, direction= "RIGHT"):
+        super().__init__(x, y, colour, speed, direction)
+
+class Main(UserPlayer, ProgramPlayer):
+    # Initialise Main
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("PyTron")
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.game_over = False
+        self.font = pygame.font.Font(None, 74)
+
+    # Two players created - user and program
+        self.user = UserPlayer(100, HEIGHT // 2, BLUE, speed=5, direction="LEFT")
+        self.program = ProgramPlayer(WIDTH - 100, HEIGHT // 2, RED, speed=5, direction="RIGHT")
+
+    def run(self):
+        # Main game loop
+
+        while self.running:
+            self.handle_events()
+
+            if not self.game_over:
+                self.update()
+            
+            self.draw()
+            self.clock.tick(FPS)
         
-        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-        screen.blit(text, text_rect)
-        pygame.display.flip()
-        continue  # Skip the rest of the loop if game over
+        pygame.quit()
 
-    # Handling player 1 movement (arrow keys)
+    def handle_events(self):
+        # Process game events frame by frame
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
     keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and player_1['direction'] != 'RIGHT': # prevents reversing
-        player_1['direction'] = 'LEFT'
-    elif keys[pygame.K_RIGHT] and player_1['direction'] != 'LEFT':
-        player_1['direction'] = 'RIGHT'
-    elif keys[pygame.K_UP] and player_1['direction'] != 'DOWN':
-        player_1['direction'] = 'UP'
-    elif keys[pygame.K_DOWN] and player_1['direction'] != 'UP':
-        player_1['direction'] = 'DOWN'
-    
-    # Handling player 2 movement (wasd keys)
-    if keys[pygame.K_a] and player_2['direction'] != 'RIGHT':
-        player_2['direction'] = 'LEFT'
-    elif keys[pygame.K_d] and player_2['direction'] != 'LEFT':
-        player_2['direction'] = 'RIGHT'
-    elif keys[pygame.K_w] and player_2['direction'] != 'DOWN':
-        player_2['direction'] = 'UP'
-    elif keys[pygame.K_s] and player_2['direction'] != 'UP':
-        player_2['direction'] = 'DOWN'
 
-    # Move Player 1
-    if player_1['direction'] == 'RIGHT':
-        player_1['position'][0] += player_1['speed']
-    elif player_1['direction'] == 'LEFT':
-        player_1['position'][0] -= player_1['speed']
-    elif player_1['direction'] == 'UP':
-        player_1['position'][1] -= player_1['speed']
-    elif player_1['direction'] == 'DOWN':
-        player_1['position'][1] += player_1['speed']
-
-    # Move Player 2
-    if player_2['direction'] == 'RIGHT':
-        player_2['position'][0] += player_2['speed']
-    elif player_2['direction'] == 'LEFT':
-        player_2['position'][0] -= player_2['speed']
-    elif player_2['direction'] == 'UP':
-        player_2['position'][1] -= player_2['speed']
-    elif player_2['direction'] == 'DOWN':
-        player_2['position'][1] += player_2['speed']
+    user_input = UserPlayer.handle_input()
 
     # Add current position to trail
     player_1_trail.append(player_1['position'][:])
