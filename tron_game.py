@@ -1,4 +1,5 @@
 import pygame
+import random
 
 # initialise PyGame
 pygame.init()
@@ -137,8 +138,65 @@ class ProgramPlayer(Player):
 
     def decide_movement(self):
         # Basic AI logic, start with making random turns etc.
-        pass
+        directions = ["UP", "DOWN", "LEFT", "RIGHT"]
+        opposite = {"UP":"DOWN", "DOWN":"UP","LEFT":"RIGHT","RIGHT":"LEFT"}
 
+        # 1) Randomly decide to turn
+        if random.random() < 0.05: # 5% chance each frame
+            possible_direction = [d for d in directions if d != opposite[self.direction]]
+            new_direction = random.choice(possible_direction)
+            self.change_direction(new_direction)
+
+        # 2) Check if continuing straight will colide
+        if self.collision_if_straight():
+            # Pick a safe direction
+            safe_directions = self.find_safe_directions()
+            if safe_directions:
+                self.change_direction(random.choice(safe_directions))
+            else:
+                # No safe directions? - Still need to pick one
+                self.change_direction(random.choice(directions))
+
+    def collision_if_straight(self):
+        # Check if next position in current direction would cause collision with wall/self
+        next_x, next_y = self.get_next_position(self.direction)
+        # Check wall collision
+        if next_x < 0 or next_x >= WIDTH or next_y < 0 or next_y >= HEIGHT:
+            return True
+        
+        # Check self trail collision
+        if (next_x, next_y) in self.trail:
+            return True
+        return False
+    
+    def find_safe_directions(self):
+        # Returns list of directions that are safe for the next move (not an immediate collision)
+        directions = ["UP", "DOWN", "LEFT", "RIGHT"]
+        safe = []
+
+        for d in directions:
+            next_x, next_y = self.get_next_position(d)
+            # Check bounds
+            if 0 <= next_x <= WIDTH and 0 <= next_y < HEIGHT:
+                # Check self collision
+                if (next_x, next_y) not in self.trail:
+                    safe.append(d)
+        return safe
+    
+    def get_next_position(self, direction):
+        # If player moves one step in direction, which xy will they end up at?
+        next_x, next_y = self.x, self.y
+        if direction == "UP":
+            next_y -= self.speed
+        elif direction == "DOWN":
+            next_y += self.speed
+        elif direction == "LEFT":
+            next_x -= self.speed
+        elif direction == "RIGHT":
+            next_x += self.speed
+        return next_x, next_y
+
+    
     def draw(self, surface):
         # Draw trail with fading + player's square
         for i, pos in enumerate(self.trail):
@@ -217,56 +275,6 @@ class Main():
 
 if __name__ == "__main__":
     Main().run()
-
-    # # Add current position to trail
-    # player_1_trail.append(player_1['position'][:])
-    # player_2_trail.append(player_2['position'][:])
-
-    # if len(player_1_trail) > MAX_TRAIL_LENGTH:
-    #     player_1_trail.pop(0) # Remove the oldest position
-    
-    # if len(player_2_trail) > MAX_TRAIL_LENGTH:
-    #     player_2_trail.pop(0) # Remove the oldest position
-
-    # screen.fill(BLACK)
-    # trail_surface.fill((0, 0, 0, 0))
-
-    # player_1_trail_colour = (*player_1['colour'], trail_alpha)
-    # player_2_trail_colour = (*player_2['colour'], trail_alpha)
-
-    # # Draw player 1 trail
-    # for pos in player_1_trail:
-    #     pygame.draw.rect(screen, player_1_trail_colour, (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
-    
-    # # Draw player 2 trail
-    # for pos in player_2_trail:
-    #     pygame.draw.rect(screen, player_2_trail_colour, (pos[0], pos[1], PLAYER_SIZE, PLAYER_SIZE))
-
-    # Draw Player 1 trail with fading effect
-    # for i, pos in enumerate(player_1_trail):
-    #     # Calculate alpha based on position in the trail list (older segments are more transparent)
-    #     alpha = int(255 * (i / MAX_TRAIL_LENGTH))  # Older positions will have lower alpha
-    #     trail_color = (*player_1['colour'], alpha)
-    #     trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
-    #     trail_rect.fill(trail_color)
-    #     screen.blit(trail_rect, pos)
-    
-    # # Draw Player 2 trail with fading effect
-    # for i, pos in enumerate(player_2_trail):
-    #     alpha = int(255 * (i / MAX_TRAIL_LENGTH))
-    #     trail_color = (*player_2['colour'], alpha)
-    #     trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
-    #     trail_rect.fill(trail_color)
-    #     screen.blit(trail_rect, pos)
-
-    # if (player_1['position'][0] < 0 or 
-    #     player_1['position'][0] >= WIDTH or
-    #     player_1['position'][1] < 0 or 
-    #     player_1['position'][1] >= HEIGHT):
-    #     print("Player 1 hit the wall!")
-    #     game_over = True
-
-
 
     screen.blit(trail_surface, (0, 0)) # Blit trail surface onto main screen
 
