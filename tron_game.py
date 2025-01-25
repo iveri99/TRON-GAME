@@ -275,17 +275,9 @@ class Main():
 
 if __name__ == "__main__":
     Main().run()
-
-    screen.blit(trail_surface, (0, 0)) # Blit trail surface onto main screen
-
-    # # Drawing sprites for players, player 1 as blue square, player 2 as red square
-    # pygame.draw.rect(screen, player_1['colour'],
-    #             (player_1['position'][0], player_1['position'][1], PLAYER_SIZE, PLAYER_SIZE))  
-    # pygame.draw.rect(screen, player_2['colour'], 
-    #              (player_2['position'][0], player_2['position'][1], PLAYER_SIZE, PLAYER_SIZE))
     
-    pygame.display.flip() # Update display
+pygame.display.flip() # Update display
 
-    clock.tick(60) # Limit to 60 FPS
+clock.tick(60) # Limit to 60 FPS
 
     
