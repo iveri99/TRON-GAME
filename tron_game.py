@@ -22,17 +22,6 @@ pygame.display.set_caption("TRON GAME")
 
 game_over = False # 'Game over check' variable created with boolean value - originally falsy
 
-
-
-# Variable created to identify that game is running
-running = True
-clock = pygame.time.Clock() # Used later for screen refresh rate
-PLAYER_SIZE = 10
-player_1_trail = []
-player_2_trail = []
-MAX_TRAIL_LENGTH = 50
-
-
 class Move:
     def __init__(self, x, y, speed=5, direction = None):
         # Initialise Move class
