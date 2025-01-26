@@ -5,15 +5,19 @@ import random
 pygame.init()
 
 # CONSTANTS
-WIDTH = 800
-HEIGHT = 600
-CELL_SIZE = 20
+WIDTH = 600
+HEIGHT = 650
+CELL_SIZE = 30
 BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
+BLUE = (162, 212, 255)
+RED = (255, 196, 0)
+BACKGROUND_COLOUR = (22,33,43)
+LINES_COLOUR = (51,77,100)
 PLAYER_SIZE = 10
 MAX_TRAIL_LENGTH = 50
 FPS = 60
+ROWS = HEIGHT // CELL_SIZE
+COLS = WIDTH // CELL_SIZE
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 trail_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA) # Transparent surface created for trail
@@ -239,8 +243,15 @@ class Main():
         if self.program.get_position() in self.user.trail:
             self.game_over = True
 
+    def drawGrid(self):
+        for x in range(0, WIDTH, CELL_SIZE):
+            for y in range(0, HEIGHT, CELL_SIZE):
+                rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
+                pygame.draw.rect(self.screen, LINES_COLOUR, rect, 1)
+    
     def draw(self):
-        self.screen.fill(BLACK)
+        self.screen.fill(BACKGROUND_COLOUR)
+        self.drawGrid()
         if self.game_over:
             text = self.font.render("GAME OVER", True, (255, 255, 255))
             rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
@@ -257,6 +268,7 @@ class Main():
             if not self.game_over:
                 self.update()
             self.draw()
+
             self.clock.tick(FPS)
         pygame.quit()
 
@@ -264,9 +276,4 @@ class Main():
 
 if __name__ == "__main__":
     Main().run()
-    
-pygame.display.flip() # Update display
-
-clock.tick(60) # Limit to 60 FPS
-
     
