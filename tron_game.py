@@ -129,6 +129,38 @@ class ProgramPlayer(Player):
         super().__init__(x, y, speed, direction)
         self.colour = colour
 
+    def get_safe_moves(self, grid, rows, cols):
+        # Determine all valid moves for the Program Player in its current position
+
+        # Current position in the grid
+        grid_x = self.x // CELL_SIZE
+        grid_y = self.y // CELL_SIZE
+
+        rows = ROWS
+        cols = COLS
+
+        # Possible directions and deltas
+        directions = {
+            "UP": (grid_x, grid_y - 1),
+            "DOWN": (grid_x, grid_y + 1),
+            "LEFT": (grid_x - 1, grid_y),
+            "RIGHT": (grid_x + 1, grid_y)
+        }
+
+        # List to store safe moves
+        safe_moves = []
+
+        # Iterate through possible moves
+        for direction, (new_x, new_y) in directions.items():
+            # Check if new position is within bounds
+            if 0 <= new_x < cols and 0 <= new_y < rows:
+                # Check if the new position is not occupied
+                if not grid[new_y][new_x]:
+                    safe_moves.append(direction)
+
+        return safe_moves
+
+    
     def decide_movement(self):
         # Basic AI logic, start with making random turns etc.
         directions = ["UP", "DOWN", "LEFT", "RIGHT"]
