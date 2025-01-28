@@ -167,20 +167,20 @@ class ProgramPlayer(Player):
         opposite = {"UP":"DOWN", "DOWN":"UP","LEFT":"RIGHT","RIGHT":"LEFT"}
 
         # 1) Randomly decide to turn
-        if random.random() < 0.05: # 5% chance each frame
-            possible_direction = [d for d in directions if d != opposite[self.direction]]
-            new_direction = random.choice(possible_direction)
-            self.change_direction(new_direction)
+        # if random.random() < 0.05: # 5% chance each frame
+        #     possible_direction = [d for d in directions if d != opposite[self.direction]]
+        #     new_direction = random.choice(possible_direction)
+        #     self.change_direction(new_direction)
 
         # 2) Check if continuing straight will colide
         if self.collision_if_straight():
             # Pick a safe direction
-            safe_directions = self.find_safe_directions()
-            if safe_directions:
-                self.change_direction(random.choice(safe_directions))
+            safe_moves = self.get_safe_moves(grid, ROWS, COLS)
+            if safe_moves:
+                self.change_direction(random.choice(safe_moves))
             else:
-                # No safe directions? - Still need to pick one
-                self.change_direction(random.choice(directions))
+                # No safe directions? - AI doesn't move
+                return
 
     def collision_if_straight(self):
         # Check if next position in current direction would cause collision with wall/self
@@ -194,19 +194,19 @@ class ProgramPlayer(Player):
             return True
         return False
     
-    def find_safe_directions(self):
-        # Returns list of directions that are safe for the next move (not an immediate collision)
-        directions = ["UP", "DOWN", "LEFT", "RIGHT"]
-        safe = []
+    # def find_safe_directions(self):
+    #     # Returns list of directions that are safe for the next move (not an immediate collision)
+    #     directions = ["UP", "DOWN", "LEFT", "RIGHT"]
+    #     safe = []
 
-        for d in directions:
-            next_x, next_y = self.get_next_position(d)
-            # Check bounds
-            if 0 <= next_x <= WIDTH and 0 <= next_y < HEIGHT:
-                # Check self collision
-                if (next_x, next_y) not in self.trail:
-                    safe.append(d)
-        return safe
+    #     for d in directions:
+    #         next_x, next_y = self.get_next_position(d)
+    #         # Check bounds
+    #         if 0 <= next_x <= WIDTH and 0 <= next_y < HEIGHT:
+    #             # Check self collision
+    #             if (next_x, next_y) not in self.trail:
+    #                 safe.append(d)
+    #     return safe
     
     def get_next_position(self, direction):
         # If player moves one step in direction, which xy will they end up at?
@@ -244,6 +244,9 @@ class Main():
         self.game_over = False
         self.font = pygame.font.Font(None, 74)
 
+        # Create a grid where False = free, and True = occupied
+        self.grid = [[False for _ in range(COLS)] for _ in range(ROWS)]
+        
         # Two players created - user and program
         self.user = UserPlayer(x = WIDTH - 100, y = HEIGHT // 2, colour = BLUE, speed = 5, direction = "LEFT")
         self.program = ProgramPlayer(x = 100, y = HEIGHT // 2, colour = RED, speed = 5, direction = "RIGHT")
@@ -257,11 +260,25 @@ class Main():
         keys = pygame.key.get_pressed()
 
         self.user.handle_input(keys)
-        self.program.decide_movement() # Program decides movement on its own
+        # self.program.decide_movement() # Program decides movement on its own
     
     def update(self):
+        # Update game state each frame
         self.user.update_position()
-        self.program.update_position()
+        user_grid_x = self.user.x // CELL_SIZE
+        user_grid_y = self.user.y // CELL_SIZE
+        self.grid[user_grid_x][user_grid_y] = True # Mark user's new position as occupied
+
+        # AI logic
+        safe_moves = self.program.get_safe_moves(self.grid, ROWS, COLS)
+        if safe_moves:
+            chosen_direction = random.choice(safe_moves)
+            self.program.change_direction(chosen_direction)
+        
+        self.program.update_position() # Update AI movement
+        program_grid_x = self.program.x // CELL_SIZE
+        program_grid_y = self.program.y // CELL_SIZE
+        self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
 
         # Checks for collisions
         if self.user.check_wall_collision() or self.user.check_self_collision():
@@ -274,6 +291,7 @@ class Main():
             self.game_over = True
         if self.program.get_position() in self.user.trail:
             self.game_over = True
+
 
     def drawGrid(self):
         for x in range(0, WIDTH, CELL_SIZE):
@@ -299,6 +317,8 @@ class Main():
             self.handle_events()
             if not self.game_over:
                 self.update()
+
+
             self.draw()
 
             self.clock.tick(FPS)
