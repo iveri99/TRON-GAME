@@ -158,47 +158,46 @@ class ProgramPlayer(Player):
                 if not grid[new_y][new_x]:
                     safe_moves.append(direction)
 
+        # Debug
+        print(f"AI safe moves from ({grid_x}, {grid_y}): {safe_moves}")
+
         return safe_moves
 
     
     def decide_movement(self, grid):
         # Make decision about next move
-        safe_moves = self.get_safe_moves(grid, ROWS, COLS)
+        safe_moves = self.get_safe_moves(grid)
+        chosen_direction = random.choice(safe_moves)
 
         # 2) Check if continuing straight will colide
         if self.collision_if_straight(grid):
             # Pick a safe direction
             if safe_moves:
-                self.change_direction(random.choice(safe_moves))
-            else:
-                # No safe directions? - AI is trapped
-                return
+                print(f"AI changing direction from {self.direction} to {chosen_direction}")
+                self.change_direction(chosen_direction)
+            # else:
+            #     # No safe directions? - AI is trapped
+            #     print("AI is trapped! - No safe moves.")
+            #     return
 
     def collision_if_straight(self, grid):
         # Check if next position in current direction would cause collision with wall/self
         next_x, next_y = self.get_next_position(self.direction)
         grid_x, grid_y = next_x // CELL_SIZE, next_y // CELL_SIZE
+
+        # Debugging
+        print(f"AI moving {self.direction} to grid {grid_x}, {grid_y}")
        
         # Check if not within bounds
         if not (0 <= grid_x < COLS and 0 <= grid_y < ROWS):
+            print("AI collision detected: Out of bounds")
             return True
-        elif grid[grid_y][grid_x]:
+        
+        if grid[grid_y][grid_x]:
+            print(f"AI collision detected: Cell ({grid_x}, {grid_y}) is occupied")
             return True
+        
         return False
-    
-    # def find_safe_directions(self):
-    #     # Returns list of directions that are safe for the next move (not an immediate collision)
-    #     directions = ["UP", "DOWN", "LEFT", "RIGHT"]
-    #     safe = []
-
-    #     for d in directions:
-    #         next_x, next_y = self.get_next_position(d)
-    #         # Check bounds
-    #         if 0 <= next_x <= WIDTH and 0 <= next_y < HEIGHT:
-    #             # Check self collision
-    #             if (next_x, next_y) not in self.trail:
-    #                 safe.append(d)
-    #     return safe
     
     def get_next_position(self, direction):
         # If player moves one step in direction, which xy will they end up at?
@@ -243,6 +242,9 @@ class Main():
         self.user = UserPlayer(x = WIDTH - 100, y = HEIGHT // 2, colour = BLUE, speed = 5, direction = "LEFT")
         self.program = ProgramPlayer(x = 100, y = HEIGHT // 2, colour = RED, speed = 5, direction = "RIGHT")
 
+        # Ensure Program's position is not occupied
+        self.grid[self.program.y // CELL_SIZE][self.program.x // CELL_SIZE] = False
+
     def handle_events(self):
         # Process game events frame by frame
         for event in pygame.event.get():
@@ -264,10 +266,10 @@ class Main():
         # AI logic
         safe_moves = self.program.get_safe_moves(self.grid, ROWS, COLS)
         if safe_moves:
-            chosen_direction = random.choice(safe_moves)
-            self.program.change_direction(chosen_direction)
+            self.program.change_direction(random.choice(safe_moves))
         
         self.program.update_position() # Update AI movement
+        
         program_grid_x = self.program.x // CELL_SIZE
         program_grid_y = self.program.y // CELL_SIZE
         self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
