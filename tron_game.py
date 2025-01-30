@@ -127,7 +127,7 @@ class UserPlayer(Player):
 class ProgramPlayer(Player):
     def __init__(self, x, y, colour = RED, speed=5, direction= "RIGHT"):
         super().__init__(x, y, speed, direction)
-        self.colour = colour
+        self.colour = tuple(colour)
 
     def get_safe_moves(self, grid, rows, cols):
         # Determine all valid moves for the Program Player in its current position
@@ -136,8 +136,8 @@ class ProgramPlayer(Player):
         grid_x = self.x // CELL_SIZE
         grid_y = self.y // CELL_SIZE
 
-        rows = ROWS
-        cols = COLS
+        # rows = ROWS
+        # cols = COLS
 
         # Possible directions and deltas
         directions = {
@@ -161,36 +161,28 @@ class ProgramPlayer(Player):
         return safe_moves
 
     
-    def decide_movement(self):
-        # Basic AI logic, start with making random turns etc.
-        directions = ["UP", "DOWN", "LEFT", "RIGHT"]
-        opposite = {"UP":"DOWN", "DOWN":"UP","LEFT":"RIGHT","RIGHT":"LEFT"}
-
-        # 1) Randomly decide to turn
-        # if random.random() < 0.05: # 5% chance each frame
-        #     possible_direction = [d for d in directions if d != opposite[self.direction]]
-        #     new_direction = random.choice(possible_direction)
-        #     self.change_direction(new_direction)
+    def decide_movement(self, grid):
+        # Make decision about next move
+        safe_moves = self.get_safe_moves(grid, ROWS, COLS)
 
         # 2) Check if continuing straight will colide
-        if self.collision_if_straight():
+        if self.collision_if_straight(grid):
             # Pick a safe direction
-            safe_moves = self.get_safe_moves(grid, ROWS, COLS)
             if safe_moves:
                 self.change_direction(random.choice(safe_moves))
             else:
-                # No safe directions? - AI doesn't move
+                # No safe directions? - AI is trapped
                 return
 
-    def collision_if_straight(self):
+    def collision_if_straight(self, grid):
         # Check if next position in current direction would cause collision with wall/self
         next_x, next_y = self.get_next_position(self.direction)
-        # Check wall collision
-        if next_x < 0 or next_x >= WIDTH or next_y < 0 or next_y >= HEIGHT:
+        grid_x, grid_y = next_x // CELL_SIZE, next_y // CELL_SIZE
+       
+        # Check if not within bounds
+        if not (0 <= grid_x < COLS and 0 <= grid_y < ROWS):
             return True
-        
-        # Check self trail collision
-        if (next_x, next_y) in self.trail:
+        elif grid[grid_y][grid_x]:
             return True
         return False
     
