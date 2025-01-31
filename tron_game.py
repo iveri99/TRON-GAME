@@ -27,7 +27,7 @@ pygame.display.set_caption("TRON GAME")
 game_over = False # 'Game over check' variable created with boolean value - originally falsy
 
 class Move:
-    def __init__(self, x, y, speed=5, direction = None):
+    def __init__(self, x, y, speed = CELL_SIZE // 5, direction = None):
         # Initialise Move class
         self.x = x
         self.y = y
@@ -88,7 +88,7 @@ class Move:
             
 class Player(Move):
     # Initialise Player class
-    def __init__(self, x, y, speed=5, direction = None):
+    def __init__(self, x, y, speed= CELL_SIZE // 5, direction = None):
         super().__init__(x, y, speed, direction)
 
     def move(self):
@@ -98,7 +98,7 @@ class Player(Move):
         pass
 
 class UserPlayer(Player):
-    def __init__(self, x, y, colour = BLUE, speed=5, direction="LEFT"):
+    def __init__(self, x, y, colour = BLUE, speed= CELL_SIZE // 5, direction="LEFT"):
         super().__init__(x, y, speed, direction)
         self.colour = colour
 
@@ -125,7 +125,7 @@ class UserPlayer(Player):
         pygame.draw.rect(surface, self.colour, (self.x, self.y, PLAYER_SIZE, PLAYER_SIZE))
 
 class ProgramPlayer(Player):
-    def __init__(self, x, y, colour = RED, speed=5, direction= "RIGHT"):
+    def __init__(self, x, y, colour = RED, speed= CELL_SIZE // 5, direction= "RIGHT"):
         super().__init__(x, y, speed, direction)
         self.colour = tuple(colour)
 
@@ -163,22 +163,35 @@ class ProgramPlayer(Player):
 
         return safe_moves
 
-    
-    def decide_movement(self, grid):
-        # Make decision about next move
-        safe_moves = self.get_safe_moves(grid)
+    def decide_movement(self, grid, rows, cols):
+        # Get all safe moves
+        safe_moves = self.get_safe_moves(grid, rows, cols)
+        
+        # Prevent reversing direction
+        opposite_direction = {
+            "UP": "DOWN",
+            "DOWN": "UP",
+            "LEFT": "RIGHT",
+            "RIGHT": "LEFT"
+        }
+        
+        # Filter out the opposite direction from safe moves
+        safe_moves = [move for move in safe_moves if move != opposite_direction[self.direction]]
+        
+        # If no safe moves, the AI is trapped
+        if not safe_moves:
+            print("AI is trapped! - No safe moves.")
+            return
+        
+        # If moving straight is safe, continue in the same direction
+        if self.direction in safe_moves and not self.collision_if_straight(grid):
+            return  # Continue moving in the same direction
+        
+        # Otherwise, choose a new direction (preferably not random)
         chosen_direction = random.choice(safe_moves)
-
-        # 2) Check if continuing straight will colide
-        if self.collision_if_straight(grid):
-            # Pick a safe direction
-            if safe_moves:
-                print(f"AI changing direction from {self.direction} to {chosen_direction}")
-                self.change_direction(chosen_direction)
-            # else:
-            #     # No safe directions? - AI is trapped
-            #     print("AI is trapped! - No safe moves.")
-            #     return
+        print(f"AI changing direction from {self.direction} to {chosen_direction}")
+        self.change_direction(chosen_direction)
+    
 
     def collision_if_straight(self, grid):
         # Check if next position in current direction would cause collision with wall/self
@@ -239,8 +252,8 @@ class Main():
         self.grid = [[False for _ in range(COLS)] for _ in range(ROWS)]
         
         # Two players created - user and program
-        self.user = UserPlayer(x = WIDTH - 100, y = HEIGHT // 2, colour = BLUE, speed = 5, direction = "LEFT")
-        self.program = ProgramPlayer(x = 100, y = HEIGHT // 2, colour = RED, speed = 5, direction = "RIGHT")
+        self.user = UserPlayer(x = WIDTH - 100, y = HEIGHT // 2, colour = BLUE, speed = CELL_SIZE // 5, direction = "LEFT")
+        self.program = ProgramPlayer(x = 100, y = HEIGHT // 2, colour = RED, speed = CELL_SIZE // 5, direction = "RIGHT")
 
         # Ensure Program's position is not occupied
         self.grid[self.program.y // CELL_SIZE][self.program.x // CELL_SIZE] = False
@@ -261,7 +274,7 @@ class Main():
         self.user.update_position()
         user_grid_x = self.user.x // CELL_SIZE
         user_grid_y = self.user.y // CELL_SIZE
-        self.grid[user_grid_x][user_grid_y] = True # Mark user's new position as occupied
+        # self.grid[user_grid_x][user_grid_y] = True # Mark user's new position as occupied
 
         # AI logic
         safe_moves = self.program.get_safe_moves(self.grid, ROWS, COLS)
@@ -272,19 +285,23 @@ class Main():
         
         program_grid_x = self.program.x // CELL_SIZE
         program_grid_y = self.program.y // CELL_SIZE
-        self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
+        # self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
 
         # Checks for collisions
         if self.user.check_wall_collision() or self.user.check_self_collision():
-            self.game_over = True
+            # self.game_over = True
+            pass
         if self.program.check_wall_collision() or self.program.check_self_collision():
-            self.game_over = True
+            # self.game_over = True
+            pass
 
         # Checks if user hits program's trail or vice versa
         if self.user.get_position() in self.program.trail:
-            self.game_over = True
+            # self.game_over = True
+            pass
         if self.program.get_position() in self.user.trail:
-            self.game_over = True
+            # self.game_over = True
+            pass
 
 
     def drawGrid(self):
