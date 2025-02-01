@@ -184,7 +184,7 @@ class ProgramPlayer(Player):
             return
         
         # If moving straight is safe, continue in the same direction
-        if self.direction in safe_moves and not self.collision_if_straight(grid):
+        if self.direction in safe_moves:
             return  # Continue moving in the same direction
         
         # Otherwise, choose a new direction (preferably not random)
@@ -286,6 +286,13 @@ class Main():
         program_grid_x = self.program.x // CELL_SIZE
         program_grid_y = self.program.y // CELL_SIZE
         # self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
+
+        players = [self.user, self.program]
+        
+        # for player in players:
+        #     if isinstance(player, ProgramPlayer):
+        #         player.decide_movement(self.grid, ROWS, COLS)
+        #     player.move()
 
         # Checks for collisions
         if self.user.check_wall_collision() or self.user.check_self_collision():
