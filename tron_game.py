@@ -1,5 +1,6 @@
 import pygame
 import random
+import heapq
 
 # initialise PyGame
 pygame.init()
@@ -25,6 +26,88 @@ trail_alpha = 50
 pygame.display.set_caption("TRON GAME")
 
 game_over = False # 'Game over check' variable created with boolean value - originally falsy
+
+import pygame
+import heapq
+
+class TronAI:
+    def __init__(self, grid_size, walls, player_pos, opponent_pos):
+        self.grid_size = grid_size  # (width, height)
+        self.walls = walls  # Set of occupied positions
+        self.player_pos = player_pos  # AI player position
+        self.opponent_pos = opponent_pos  # Opponent position
+
+    def astar(self, start, goal):
+        """A* pathfinding algorithm"""
+        def heuristic(a, b):
+            return abs(a[0] - b[0]) + abs(a[1] - b[1])
+        
+        open_set = []
+        heapq.heappush(open_set, (0, start))
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: heuristic(start, goal)}
+        
+        while open_set:
+            _, current = heapq.heappop(open_set)
+            
+            if current == goal:
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                return path[::-1]  # Reverse path
+            
+            neighbors = self.get_neighbors(current)
+            for neighbor in neighbors:
+                temp_g_score = g_score[current] + 1
+                if neighbor not in g_score or temp_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = temp_g_score
+                    f_score[neighbor] = temp_g_score + heuristic(neighbor, goal)
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+        
+        return None  # No path found
+    
+    def get_neighbors(self, pos):
+        """Returns valid neighboring positions"""
+        x, y = pos
+        neighbors = [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
+        return [n for n in neighbors if self.is_valid(n)]
+    
+    def is_valid(self, pos):
+        """Checks if a position is within bounds and not occupied"""
+        x, y = pos
+        return 0 <= x < self.grid_size[0] and 0 <= y < self.grid_size[1] and pos not in self.walls
+    
+    def predict_opponent_move(self):
+        """Predicts the opponent's next move by checking open spaces"""
+        neighbors = self.get_neighbors(self.opponent_pos)
+        return min(neighbors, key=lambda n: abs(n[0] - self.player_pos[0]) + abs(n[1] - self.player_pos[1]), default=self.opponent_pos)
+    
+    def find_best_move(self):
+        """Finds the best move based on A* pathfinding and trapping strategy"""
+        predicted_opponent_pos = self.predict_opponent_move()
+        
+        # Attempt to move towards the opponent's predicted position
+        path_to_trap = self.astar(self.player_pos, predicted_opponent_pos)
+        if path_to_trap:
+            return path_to_trap[0]
+        
+        # Fallback: find an open space to move safely
+        open_spaces = [(x, y) for x in range(self.grid_size[0]) for y in range(self.grid_size[1]) if (x, y) not in self.walls]
+        
+        if not open_spaces:
+            return None  # No moves available
+        
+        best_path = None
+        for target in open_spaces:
+            path = self.astar(self.player_pos, target)
+            if path and (not best_path or len(path) < len(best_path)):
+                best_path = path
+        
+        return best_path[0] if best_path else None  # Return next move or None if stuck
+
 
 class Move:
     def __init__(self, x, y, speed = CELL_SIZE // 5, direction = None):
@@ -124,108 +207,25 @@ class UserPlayer(Player):
 
         pygame.draw.rect(surface, self.colour, (self.x, self.y, PLAYER_SIZE, PLAYER_SIZE))
 
-class ProgramPlayer(Player):
-    def __init__(self, x, y, colour = RED, speed= CELL_SIZE // 5, direction= "RIGHT"):
+class ProgramPlayer(Player, TronAI):
+    def __init__(self, x, y, grid_size, walls, opponent_pos, speed=5, direction="LEFT", colour = RED):
         super().__init__(x, y, speed, direction)
-        self.colour = tuple(colour)
-
-    def get_safe_moves(self, grid, rows, cols):
-        # Determine all valid moves for the Program Player in its current position
-
-        # Current position in the grid
-        grid_x = self.x // CELL_SIZE
-        grid_y = self.y // CELL_SIZE
-
-        # rows = ROWS
-        # cols = COLS
-
-        # Possible directions and deltas
-        directions = {
-            "UP": (grid_x, grid_y - 1),
-            "DOWN": (grid_x, grid_y + 1),
-            "LEFT": (grid_x - 1, grid_y),
-            "RIGHT": (grid_x + 1, grid_y)
-        }
-
-        # List to store safe moves
-        safe_moves = []
-
-        # Iterate through possible moves
-        for direction, (new_x, new_y) in directions.items():
-            # Check if new position is within bounds
-            if 0 <= new_x < cols and 0 <= new_y < rows:
-                # Check if the new position is not occupied
-                if not grid[new_y][new_x]:
-                    safe_moves.append(direction)
-
-        # Debug
-        print(f"AI safe moves from ({grid_x}, {grid_y}): {safe_moves}")
-
-        return safe_moves
-
-    def decide_movement(self, grid, rows, cols):
-        # Get all safe moves
-        safe_moves = self.get_safe_moves(grid, rows, cols)
-        
-        # Prevent reversing direction
-        opposite_direction = {
-            "UP": "DOWN",
-            "DOWN": "UP",
-            "LEFT": "RIGHT",
-            "RIGHT": "LEFT"
-        }
-        
-        # Filter out the opposite direction from safe moves
-        safe_moves = [move for move in safe_moves if move != opposite_direction[self.direction]]
-        
-        # If no safe moves, the AI is trapped
-        if not safe_moves:
-            print("AI is trapped! - No safe moves.")
-            return
-        
-        # If moving straight is safe, continue in the same direction
-        if self.direction in safe_moves:
-            return  # Continue moving in the same direction
-        
-        # Otherwise, choose a new direction (preferably not random)
-        chosen_direction = random.choice(safe_moves)
-        print(f"AI changing direction from {self.direction} to {chosen_direction}")
-        self.change_direction(chosen_direction)
+        self.ai = TronAI(grid_size, walls, (x, y), opponent_pos)
+        self.colour = colour
     
-
-    def collision_if_straight(self, grid):
-        # Check if next position in current direction would cause collision with wall/self
-        next_x, next_y = self.get_next_position(self.direction)
-        grid_x, grid_y = next_x // CELL_SIZE, next_y // CELL_SIZE
-
-        # Debugging
-        print(f"AI moving {self.direction} to grid {grid_x}, {grid_y}")
-       
-        # Check if not within bounds
-        if not (0 <= grid_x < COLS and 0 <= grid_y < ROWS):
-            print("AI collision detected: Out of bounds")
-            return True
-        
-        if grid[grid_y][grid_x]:
-            print(f"AI collision detected: Cell ({grid_x}, {grid_y}) is occupied")
-            return True
-        
-        return False
+    def update_ai(self, walls, opponent_pos):
+        self.ai.walls = walls
+        self.ai.opponent_pos = opponent_pos
+        self.ai.player_pos = (self.x, self.y)
     
-    def get_next_position(self, direction):
-        # If player moves one step in direction, which xy will they end up at?
-        next_x, next_y = self.x, self.y
-        if direction == "UP":
-            next_y -= self.speed
-        elif direction == "DOWN":
-            next_y += self.speed
-        elif direction == "LEFT":
-            next_x -= self.speed
-        elif direction == "RIGHT":
-            next_x += self.speed
-        return next_x, next_y
+    def move(self):
+        next_move = self.ai.find_best_move()
+        if next_move:
+            self.x, self.y = next_move
+        self.trail.append((self.x, self.y))
+        if len(self.trail) > self.max_trail_length:
+            self.trail.pop(0)
 
-    
     def draw(self, surface):
         # Draw trail with fading + player's square
         for i, pos in enumerate(self.trail):
@@ -234,6 +234,99 @@ class ProgramPlayer(Player):
             trail_rect = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE), pygame.SRCALPHA)
             trail_rect.fill(trail_colour)
             surface.blit(trail_rect, pos)
+
+# class ProgramPlayer(Player):
+#     def __init__(self, x, y, colour = RED, speed= CELL_SIZE // 5, direction= "RIGHT"):
+#         super().__init__(x, y, speed, direction)
+#         self.colour = tuple(colour)
+#         self.turn_cooldown = 0
+
+
+
+    # def get_safe_moves(self, grid, rows, cols):
+    #     # Determine all valid moves for the Program Player in its current position
+
+    #     # Current position in the grid
+    #     grid_x = self.x // CELL_SIZE
+    #     grid_y = self.y // CELL_SIZE
+
+    #     # Possible directions and deltas
+    #     directions = {
+    #         "UP": (grid_x, grid_y - 1),
+    #         "DOWN": (grid_x, grid_y + 1),
+    #         "LEFT": (grid_x - 1, grid_y),
+    #         "RIGHT": (grid_x + 1, grid_y)
+    #     }
+
+    #     # List to store safe moves
+    #     safe_moves = []
+
+    #     # Iterate through possible moves
+    #     for direction, (new_x, new_y) in directions.items():
+    #         # Check if new position is within bounds
+    #         if 0 <= new_x < cols and 0 <= new_y < rows:
+    #             # Check if the new position is not occupied
+    #             if not grid[new_y][new_x]:
+    #                 safe_moves.append(direction)
+
+    #     # Debug
+    #     print(f"AI safe moves from ({grid_x}, {grid_y}): {safe_moves}")
+
+    #     return safe_moves
+
+    # def decide_movement(self, grid, rows, cols):
+        
+    #     opposite_directions = {
+    #         "UP": "DOWN",
+    #         "DOWN": "UP",
+    #         "LEFT": "RIGHT",
+    #         "RIGHT": "LEFT"
+    #     }
+    #     safe_moves = self.get_safe_moves(grid, rows, cols)
+
+    #     count = 0
+
+    #     while count > 0 and count <= 3:
+    #         chosen_move = random.choice(safe_moves)
+    #         for i in range(3):
+    #             self.update_position(chosen_move)
+    #             count += 1
+            
+    #         count = 0
+
+    # def collision_if_straight(self, grid):
+    #     # Check if next position in current direction would cause collision with wall/self
+    #     next_x, next_y = self.get_next_position(self.direction)
+    #     grid_x, grid_y = next_x // CELL_SIZE, next_y // CELL_SIZE
+
+    #     # Debugging
+    #     print(f"AI moving {self.direction} to grid {grid_x}, {grid_y}")
+       
+    #     # Check if not within bounds
+    #     if not (0 <= grid_x < COLS and 0 <= grid_y < ROWS):
+    #         print("AI collision detected: Out of bounds")
+    #         return True
+        
+    #     if grid[grid_y][grid_x]:
+    #         print(f"AI collision detected: Cell ({grid_x}, {grid_y}) is occupied")
+    #         return True
+        
+    #     return False
+    
+    # def get_next_position(self, direction):
+    #     # If player moves one step in direction, which xy will they end up at?
+    #     next_x, next_y = self.x, self.y
+    #     if direction == "UP":
+    #         next_y -= self.speed
+    #     elif direction == "DOWN":
+    #         next_y += self.speed
+    #     elif direction == "LEFT":
+    #         next_x -= self.speed
+    #     elif direction == "RIGHT":
+    #         next_x += self.speed
+    #     return next_x, next_y
+
+
 
 
 class Main():
@@ -250,13 +343,18 @@ class Main():
 
         # Create a grid where False = free, and True = occupied
         self.grid = [[False for _ in range(COLS)] for _ in range(ROWS)]
+
+        self.grid_size = (COLS, ROWS)
+        self.walls = set()  # Tracks occupied spaces
         
         # Two players created - user and program
         self.user = UserPlayer(x = WIDTH - 100, y = HEIGHT // 2, colour = BLUE, speed = CELL_SIZE // 5, direction = "LEFT")
-        self.program = ProgramPlayer(x = 100, y = HEIGHT // 2, colour = RED, speed = CELL_SIZE // 5, direction = "RIGHT")
+        self.program = ProgramPlayer(100, HEIGHT // 2, self.grid_size, self.walls, self.user.get_position())
 
         # Ensure Program's position is not occupied
         self.grid[self.program.y // CELL_SIZE][self.program.x // CELL_SIZE] = False
+
+        
 
     def handle_events(self):
         # Process game events frame by frame
@@ -277,12 +375,32 @@ class Main():
         # self.grid[user_grid_x][user_grid_y] = True # Mark user's new position as occupied
 
         # AI logic
-        safe_moves = self.program.get_safe_moves(self.grid, ROWS, COLS)
-        if safe_moves:
-            self.program.change_direction(random.choice(safe_moves))
+        # safe_moves = self.program.get_safe_moves(self.grid, ROWS, COLS)
+        # if safe_moves:
+        #     self.program.change_direction(random.choice(safe_moves))
         
-        self.program.update_position() # Update AI movement
-        
+        # self.program.update_position() # Update AI movement
+        # self.program.decide_movement(self.grid, ROWS, COLS)
+
+        self.program.update_ai(self.walls, self.user.get_position())
+        self.program.move()
+
+        # Add trails to walls (occupied spaces)
+        self.walls.update(self.user.trail)
+        self.walls.update(self.program.trail)
+
+        # Check for collisions
+        # if self.user.check_wall_collision() or self.user.check_self_collision():
+        #     self.game_over = True
+        # if self.program.check_wall_collision() or self.program.check_self_collision():
+        #     self.game_over = True
+
+        # # Check if user hits AI trail or vice versa
+        # if self.user.get_position() in self.program.trail:
+        #     self.game_over = True
+        # if self.program.get_position() in self.user.trail:
+        #     self.game_over = True
+            
         program_grid_x = self.program.x // CELL_SIZE
         program_grid_y = self.program.y // CELL_SIZE
         # self.grid[program_grid_x][program_grid_y] = True # Mark program's new position as occupied
