@@ -1,6 +1,6 @@
 import pygame
 import random
-import heapq
+from collections import deque
 
 # initialise PyGame
 pygame.init()
@@ -27,15 +27,75 @@ pygame.display.set_caption("TRON GAME")
 
 game_over = False # 'Game over check' variable created with boolean value - originally falsy
 
-import pygame
-import heapq
-
 class TronAI:
-    def __init__(self, grid_size, walls, player_pos, opponent_pos):
-        self.grid_size = grid_size  # (width, height)
-        self.walls = walls  # Set of occupied positions
-        self.player_pos = player_pos  # AI player position
-        self.opponent_pos = opponent_pos  # Opponent position
+    def __init__(self, start, board):
+        self.start = start
+        self.board = board
+
+    def flood_fill(self, start, board):
+        # Flood-fill/BFS algorithm
+        visited = set() # Create empty set to keep track of cells that have been visited
+        queue = deque([start]) # Initialise deque with starting position
+        count = 0 # Variable to count the number of empty cells reachable
+
+        # Keep processing until queue is empty
+        while queue:
+            x,y = queue.popleft() # Remove & return leftmost element of queue - FIFO
+
+            # If we have already visited the cell, skip
+            if (x,y) in visited:
+                continue
+
+            visited.add((x,y)) # Mark current cell as visited
+            count += 1 # Increase count by one, since the cell is reachable
+
+            # Define four possible directions
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, x + dy # New directions
+
+                # Check if new coords are within bounds
+                if 0 <= (nx, ny) < len(board):
+                    # Check if new cell is empty (0) & hasn't been visited yet
+                    if board[nx][ny] == 0 and (nx,ny) not in visited:
+                        queue.append((nx, ny)) # Add cell to the queue for later 'processing'
+        
+        return count # Return total number of reachable cells
+    
+    def get_valid_moves(self, position, board):
+        x, y = position # Unpack current position into x,y coords
+        moves = {} # Empty dict for storing valid moves and their new positions
+
+        # Define possible directions
+        directions = {
+            'UP': (-1, 0),
+            'DOWN': (1, 0),
+            'LEFT': (0, -1),
+            'RIGHT': (0, 1)
+        }
+
+        # Loop through each direction to calculate new pos
+        for move, (dx, dy) in directions.items():
+            nx, ny = x + dx, y + dy # Calculate new pos after the move
+
+            # Check if new pos is within bounds
+            if 0 <= nx < len(board) and 0 <= ny <= len(board[0]):
+                # Check if new cell is empty (value of 0)
+                if board[nx][ny] = 0:
+                    moves[move] = (nx, ny) # Save this move and the resulting position
+
+        return moves # Returns all valid moves
+
+    def choose_best_move(self, position, board):
+        # Method for choosing the best move based on amount of free space available
+        moves = self.get_valid_moves(position, board)
+        best_move = None
+        max_space = -1
+
+        for move, new_pos in moves.items():
+            # Copy board & simulate the move
+            new_board = [row[:] for row in board]
+            new_board[new_pos]
+
 
 
 class Move:
